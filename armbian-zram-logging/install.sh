@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Armbian zram and log2zram installer script
-# Requires Debian Jessie or newer
+# Requires Debian Jessie or newer and must be run by root or sudo
 # By Franics Theodore Catte, 2019.
 # system_prep function borrowed in part from armbian-hardware-optimization script
 
@@ -70,9 +70,9 @@ apt -y install rsync
 
 # copy armbian scripts
 mkdir /usr/lib/armbian
-cp ./armbian-ramlog /usr/lib/armbian
-cp ./armbian-zram-config /usr/lib/armbian
-cp ./armbian-truncate-logs /usr/lib/armbian
+cp ./scripts/armbian-ramlog /usr/lib/armbian
+cp ./scripts/armbian-zram-config /usr/lib/armbian
+cp ./scripts/armbian-truncate-logs /usr/lib/armbian
 
 # copy default configs
 cp ./configs/armbian-zram.dpkg-dist /etc/default/armbian-zram
