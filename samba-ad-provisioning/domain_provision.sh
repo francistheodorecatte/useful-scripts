@@ -20,6 +20,7 @@ apt update
 apt upgrade -y
 apt -y install samba krb5-config winbind smbclient ntp openssh-server unattended-upgrades apt-listchanges
 # the following enables unattended security updates
+# comment out if you intend on manually applying security updates to your domain controller...
 echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
 dpkg-reconfigure -f noninteractive unattended-upgrades
 # enabling ssh if not already configured
@@ -36,6 +37,7 @@ echo 'nameserver $DNSFORWARDERIP' >> /etc/resolv.conf
 echo "Setting up NTP..."
 # set local timezone
 timedatectl set-timezone $TIMEZONE
+# backup default ntp config
 mv /etc/ntp.conf /etc/ntp.conf.org
 # add US NTP servers
 echo 'pool 0.us.pool.ntp.org iburst' > /etc/ntp.conf
@@ -52,6 +54,7 @@ systemctl restart ntp
 systemctl enable ntp
 
 echo "Provisioning domain..."
+# backup samba config
 mv /etc/samba/smb.conf /etc/samba/smb.conf.org
 samba-tool domain provision --realm=$DOMAIN.$TLD --domain=$DOMAIN --server-role=dc --dns-backend=SAMBA_INTERNAL --adminpass=$ADMINPASS --use-rfc2307 --debuglevel=3
 cp /var/lib/samba/private/krb5.conf /etc/krb5.conf
@@ -60,6 +63,7 @@ sed s/127.0.0.1/$DNSFORWARDERIP/g /etc/samba/smb.conf
 
 echo "Disabling smbd, nmbd, and winbind..."
 systemctl stop smbd nmbd winbind
+systemctl mask smbd nmbd winbind
 systemctl disable smbd nmbd winbind
 echo "Enabling samba-ad-dc..."
 systemctl unmask samba-ad-dc 
