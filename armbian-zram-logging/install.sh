@@ -11,8 +11,8 @@ cp ./armbian-zram-config /usr/lib/armbian
 cp ./armbian-truncate-logs /usr/lib/armbian
 
 # copy default configs
-cp ./armbian-zram-config.dpkg-dist /etc/default
-cp ./armbian-ramlog.dpkg-dist /etc/default
+cp ./armbian-zram-config.dpkg-dist /etc/default/armbian-zram-config
+cp ./armbian-ramlog-config.dpkg-dist /etc/default/armbian-ramlog-config
 
 # setup cronjobs
 cp ./armbian-log-truncate /etc/cron.d/
