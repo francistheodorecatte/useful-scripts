@@ -1,0 +1,10 @@
+example scripts on streamlining Samba AD DC provisioning.
+
+these are written with the assumtion that the user has some modicum of knowledge on: samba, kerberos, dns, ntp, etc. read over the scripts in their entirety, and edit to suit your needs. do not run any of these scripts on a production server!
+
+also note these warnings from the Samba team on using your DC as a file server:
+https://wiki.samba.org/index.php/Setting_up_Samba_as_an_Active_Directory_Domain_Controller#Using_the_Domain_Controller_as_a_File_Server
+
+script usage:
+domain-provision.sh is for creating a domain from scratch.
+domain-clean.sh wipes any prior Samba domain configs. use this script with caution!!!
