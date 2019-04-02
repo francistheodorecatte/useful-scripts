@@ -75,16 +75,16 @@ cp ./armbian-zram-config /usr/lib/armbian
 cp ./armbian-truncate-logs /usr/lib/armbian
 
 # copy default configs
-cp ./armbian-zram.dpkg-dist /etc/default/armbian-zram
-cp ./armbian-ramlog-config.dpkg-dist /etc/default/armbian-ramlog-config
+cp ./configs/armbian-zram.dpkg-dist /etc/default/armbian-zram
+cp ./configs/armbian-ramlog-config.dpkg-dist /etc/default/armbian-ramlog-config
 
 # setup cronjobs
-cp ./armbian-log-truncate /etc/cron.d/
-cp ./armbian-ram-logging /etc/cron.daily/
+cp ./cron/armbian-truncate-logs /etc/cron.d/
+cp ./cron/armbian-ram-logging /etc/cron.daily/
 systemctl restart cron
 
 # setup systemd services
-cp ./armbian*.service /etc/systemd/system/
+cp ./services/*.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable armbian-ramlog
 systemctl enable armbian-zram-config
