@@ -1,0 +1,6 @@
+All but the install.sh script is copied directly from the Armbian build tree, and is therefore GPLv2 licensed, like the rest of the scripts within this repository.
+
+Config files for armboan-zram-config and armbian-ramlog are stored in /etc/default. Do not edit variables directly in the scripts!
+
+Original files availible here:
+https://github.com/armbian/build/tree/master/packages/bsp/common
