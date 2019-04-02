@@ -1,3 +1,5 @@
 A collection of random scripts I use while managing embedded Linux systems.
 
 These are mostly for Debian Jessie and newer; if otherwise it'll be noted.
+
+These scripts are provided with no warranty or any implied support. Use at your own risk! These may not be tested, or may be for specific use-cases not applicable elsewhere.
