@@ -1,0 +1,3 @@
+run check_database.sh as root if you're experiencing random crashes after several days of uptime on your plexmediaserver install.
+
+edit the PLEX_HOME variable to match your plex server's home directory.
