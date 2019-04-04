@@ -69,7 +69,7 @@ system_prep() {
 if ! lsmod | grep "zram" &> /dev/null ; then
 	# try and enable zram module if possible
 	if insmod /lib/modules/$KERNEL_VER/kernel/drivers/block/zram/zram.ko ; then
-		echo 'zram' > /etc/modules
+		echo 'zram' >> /etc/modules
 	fi
 fi
 
