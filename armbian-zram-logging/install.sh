@@ -1,11 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 # Armbian zram and log2zram installer script
 # Requires Debian Jessie or newer and must be run by root or sudo
 # By Franics Theodore Catte, 2019.
 # system_prep function borrowed in part from armbian-hardware-optimization script
-
-KERNEL_VER=uname -r
 
 # functions
 
@@ -66,22 +64,22 @@ system_prep() {
 	fi
 }
 
-if ! lsmod | grep "zram" &> /dev/null ; then
+if ! [ 'cat /proc/modules | grep zram  &> /dev/null' ]; then
 	# try and enable zram module if possible
-	if insmod /lib/modules/$KERNEL_VER/kernel/drivers/block/zram/zram.ko ; then
+	if insmod zram ; then
 		echo 'zram' >> /etc/modules
 	fi
 fi
 
 # doublecheck if zram is enabled
-if ! lsmod | grep "zram" &> /dev/null ; then
+if ! [ 'cat /proc/modules | grep zram  &> /dev/null' ]; then
 	echo "It appears your kernel has no zram support; please install the zram kernel module!"
 	exit 0
 fi
 
 # housekeeping
 system_prep
-apt -y install rsync
+apt -y install rsync cpufrequtils
 
 # copy armbian scripts
 mkdir /usr/lib/armbian
@@ -90,8 +88,8 @@ cp ./scripts/armbian-zram-config /usr/lib/armbian
 cp ./scripts/armbian-truncate-logs /usr/lib/armbian
 
 # copy default configs
-cp ./configs/armbian-zram.dpkg-dist /etc/default/armbian-zram
-cp ./configs/armbian-ramlog-config.dpkg-dist /etc/default/armbian-ramlog-config
+cp ./configs/armbian-ramlog.dpkg-dist  /etc/default/armbian-zram
+cp ./configs/armbian-zram-config.dpkg-dist /etc/default/armbian-ramlog-config
 cp ./configs/armbian-release /etc
 
 # setup cronjobs
