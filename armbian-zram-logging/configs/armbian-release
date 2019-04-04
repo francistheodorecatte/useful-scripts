@@ -1,0 +1,11 @@
+BOARD=sheevaplug
+BOARD_NAME="Sheeva Plug"
+BOARDFAMILY=kirkwood
+VERSION=5.65
+LINUXFAMILY=kirkwood
+BRANCH=next
+ARCH=armel
+IMAGE_TYPE=stable
+BOARD_TYPE=conf
+INITRD_ARCH=armel
+KERNEL_IMAGE_TYPE=zImage
