@@ -1,5 +1,5 @@
 NOTE:
-The armbian-release file under the configs directory should be edited to match your config. Mine assumes you're using a sheevaplug...
+The armbian-release file under the configs directory should be edited to match your config. Mine assumes you're using a sheevaplug... Also note that your kernel must be built with zram support. Otherwise, you will need to build and install the zram module, or recompile your kernel with zram support.
 
 All but the install.sh script is copied directly from the Armbian build tree, and is therefore GPLv2 licensed, like the rest of the scripts within this repository.
 
