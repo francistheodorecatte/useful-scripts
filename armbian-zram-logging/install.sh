@@ -64,6 +64,12 @@ system_prep() {
 	fi
 }
 
+# check if zram is even enabled
+if ! lsmod | grep "zram" &> /dev/null ; then
+	echo "It appears your kernel has no zram support; please install the zram kernel module!"
+	exit 0
+fi
+
 # housekeeping
 system_prep
 apt -y install rsync
