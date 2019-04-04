@@ -5,6 +5,8 @@
 # By Franics Theodore Catte, 2019.
 # system_prep function borrowed in part from armbian-hardware-optimization script
 
+KERNEL_VER=uname -r
+
 # functions
 
 system_prep() {
@@ -64,7 +66,14 @@ system_prep() {
 	fi
 }
 
-# check if zram is even enabled
+if ! lsmod | grep "zram" &> /dev/null ; then
+	# try and enable zram module if possible
+	if insmod /lib/modules/$KERNEL_VER/kernel/drivers/block/zram/zram.ko ; then
+		echo 'zram' > /etc/modules
+	fi
+fi
+
+# doublecheck if zram is enabled
 if ! lsmod | grep "zram" &> /dev/null ; then
 	echo "It appears your kernel has no zram support; please install the zram kernel module!"
 	exit 0
