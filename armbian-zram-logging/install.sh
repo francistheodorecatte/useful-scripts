@@ -45,7 +45,7 @@ system_prep() {
 
 	# enable compression where not exists
 	find /etc/logrotate.d/. -type f | xargs grep -H -c 'compress' | grep 0$ | cut -d':' -f1 | xargs -L1 sed -i '/{/ a compress'
-	sed -i "s/#compress/compress/" /etc/logrotate.con
+	sed -i "s/#compress/compress/" /etc/logrotate.conf
 
 
 	# tweak ondemand cpufreq governor settings to increase cpufreq with IO load
@@ -78,8 +78,8 @@ if ! [ 'cat /proc/modules | grep zram  &> /dev/null' ]; then
 fi
 
 # housekeeping
-system_prep
 apt -y install rsync cpufrequtils
+system_prep
 
 # copy armbian scripts
 mkdir /usr/lib/armbian

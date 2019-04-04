@@ -5,7 +5,7 @@
 
 echo "Stopping and disabling services..."
 systemctl stop armbian-ramlog armbian-zram-config
-systemctl disable armbian-armlog armbian-zram-config
+systemctl disable armbian-ramlog armbian-zram-config
 echo "Removing all installed files..."
 rm /etc/cron.d/armbian-truncate-logs
 rm /etc/cron.daily/armbian-ram-logging
