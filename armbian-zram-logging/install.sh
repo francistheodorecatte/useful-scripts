@@ -67,7 +67,7 @@ system_prep() {
 if ! [ 'cat /proc/modules | grep zram  &> /dev/null' ]; then
 	# try and enable zram module if possible
 	if insmod zram ; then
-		echo 'zram' >> /etc/modules
+		echo -e 'zram/nlz4_compress/nlz4_decompress/nlz4hc_compress/nlz4/nlz4hc' >> /etc/modules
 	fi
 fi
 
