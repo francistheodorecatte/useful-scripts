@@ -86,6 +86,7 @@ mkdir /usr/lib/armbian
 cp ./scripts/armbian-ramlog /usr/lib/armbian
 cp ./scripts/armbian-zram-config /usr/lib/armbian
 cp ./scripts/armbian-truncate-logs /usr/lib/armbian
+cp ./scripts/armbian-common /usr/lib/armbian
 
 # copy default configs
 cp ./configs/armbian-ramlog.dpkg-dist  /etc/default/armbian-zram
