@@ -1,0 +1,5 @@
+A simple method to using your system drive for shared folders under OMV.
+
+This uses a sparse-file disk image (if your root fileystem supports it) and loop filesystems to do so. This removes the OMV devs' main concern about running shares on your system disk-- filling the system disk up and leaving no room for logs, etc. :)
+
+Read and edit the make_loop.sh script as needed!

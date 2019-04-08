@@ -1,0 +1,17 @@
+[Unit]
+Description=Setup loop device
+DefaultDependencies=false
+ConditionFileIsExecutable=/usr/lib/systemd/scripts/loop-setup
+Before=local-fs.target
+After=systemd-udev-settle.service
+Required=systemd-udev-settle.service
+	 
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/systemd/scripts/loop-setup
+TimeoutSec=60
+RemainAfterExit=yes
+ 
+[Install]
+WantedBy=local-fs.target
+Also=systemd-udev-settle.service

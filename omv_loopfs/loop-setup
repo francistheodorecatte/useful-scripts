@@ -1,0 +1,9 @@
+#!/bin/sh
+	 
+/sbin/losetup /dev/loop0 /img/test.img
+	 
+if [ 'losetup --list | grep /img/test.img' ]; then
+        exit 0
+else
+        exit 1
+fi
