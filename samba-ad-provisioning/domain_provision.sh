@@ -14,6 +14,11 @@ DNSFORWARDERIP='172.0.0.1'
 # read this script over carefully and edit as needed BEFORE USING IT!!
 # also, make sure your device has a static IP before starting (this should be obvious but a DHCP address on a DC is not good!)
 
+if [[ $EUID -ne 0 ]]; then
+   echo -e "You need to run this script as root, or with sudo!\nExiting..."
+   exit 1
+fi
+
 echo "Starting domain creation script"
 echo "Doing some housekeeping..."
 
