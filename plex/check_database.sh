@@ -1,9 +1,11 @@
 #!/bin/bash
 
-PLEX_HOME="/srv/dev-disk-by-label-PLEXSTORE/plexmediaserver/"
+PLEX_HOME="/var/lib/plexmediaserver"
 
-apt update
-apt -y install sqlite3
+if ! [ -x "$(command -v sqlite3)" ]; then
+	apt update
+	apt -y install sqlite3
+fi
 
 cd $PLEX_HOME/Library/Application\ Support/Plex\ Media\ Server/Plug-in\ Support/Databases/
 
