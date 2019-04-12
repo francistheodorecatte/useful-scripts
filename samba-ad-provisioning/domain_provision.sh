@@ -16,9 +16,14 @@ DNSFORWARDERIP='172.0.0.1'
 
 echo "Starting domain creation script"
 echo "Doing some housekeeping..."
-apt update
-apt upgrade -y
-apt -y install samba krb5-config winbind smbclient ntp openssh-server unattended-upgrades apt-listchanges
+
+# check if these packages are installed
+if ! [ 'dpkg-query -W -f='${Package}\n' samba krb5-config winbind smbclient ntp openssh-server unattended-upgrades apt-listchanges 2>/dev/null' ] ; then
+	apt update
+	apt upgrade -y
+	apt -y install samba krb5-config winbind smbclient ntp openssh-server unattended-upgrades apt-listchanges # if any aren't, install them.
+fi
+
 # the following enables unattended security updates
 # comment out if you intend on manually applying security updates to your domain controller...
 echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
