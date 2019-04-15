@@ -53,7 +53,8 @@ if ! { "btrfs device stats /mnt/five-nines | grep -vE ' 0$'" }; then
 	# if the check fails it'll return a non-zero value and this if statement will trigger
 	if ! { 'btrfs check --mode=lowmem --force --read-only /mnt/five-nines' }; then
 		echo "btrfs check failed! leaving filesystem read-only to prevent further dataloss!" 2>&1
-		echo "investigate further by checking disk health and running btrfs check manually." 2>&1
+		echo -e "${RED}backing up all data and unmounting the filesystem is recommended before taking any further action.${NC}" 2>&1
+		echo -e "investigatation avenues:\n-use smartctl to check disk health\n-run an md repair\n-run btrfs check manually" 2>&1
 		exit 1
 	else
 		echo "btrfs check came back clean! remounting as RW." 2>&1

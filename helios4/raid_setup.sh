@@ -91,10 +91,14 @@ cd cryptsetup-master/
 ldconfig
 cd ..
 
-# don't continue until RAID sync completes
-# writing any data to the disks will slow the sync down by a factor of 10-12X
+# pause the scripte until the initial RAID sync completes
+# writing any data to the disks will slow the sync down by a factor of 12-15X
+# for referece, that's 120-150MB/s down to ~10MB/s(!)
+# RAID1/5/6 has NEGLIGIBLE redundancy until the data parity blocks are written to disk during the initial sync
+# at 10MB/s, on an array of 8TB disks, the initial sync could take literally months to complete
+# hence why my script waits for the sync to complete!
 spin='-\|/'
-echo "Waiting for RAID sync to complete. This may take a while…" 2>&1 | tee $LOG
+echo "Waiting for initial RAID sync to complete. This may take a while…" 2>&1 | tee $LOG
 while [ -n "$(mdadm --detail /dev/$MDARRAY | grep -ioE 'State :.*resyncing')" ]; do
 	i=$(( (i+1) %4 ))
 	printf "\r${spin:$i:1}"
