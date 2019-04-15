@@ -111,6 +111,8 @@ cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 -- sector-size 4096 --type luks2
 
 # make sure the crypt container is filled with all zeros before creating partition
 # this essentially uses the encryption cipher to increase entropy by filling the disks with random data
+# see the cryptsetup FAQ item 2.19 "How can I wipe a device with crypto-grade randomness?" for an explanation:
+# https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions#2-setup
 echo -e "Opening crypt container and wiping it.\nAgain, enter passkey when prompted…" 2>&1 | tee $LOG
 cryptsetup luksOpen /dev/$MDARRAY $CONTAINER
 pv -tpreb /dev/zero | dd of=/dev/mapper/$CONTAINER bs=4096 conv=notrunc,noerror
