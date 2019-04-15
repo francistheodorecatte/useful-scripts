@@ -111,7 +111,7 @@ echo "RAID sync complete!" 2>&1 | tee $LOG
 # see this benchmarking thread on the armbian forum for more info:
 # https://forum.armbian.com/topic/8486-helios4-cryptographic-engines-and-security-accelerator-cesa-benchmarking/
 echo -e "Creating crypt container.\nEnter passkey when prompted…" 2>&1 | tee $LOG
-cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 -- sector-size 4096 --type luks2 luksFormat /dev/$MDARRAY 2>&1 | tee $LOG
+cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 --sector-size 4096 --type luks2 luksFormat /dev/$MDARRAY 2>&1 | tee $LOG
 
 # make sure the crypt container is filled with all zeros before creating partition
 # this essentially uses the encryption cipher to increase entropy by filling the disks with random data
@@ -130,6 +130,9 @@ mkdir /mnt/$CONTAINER
 mount /dev/mapper/$CONTAINER /mnt/$CONTAINER
 
 echo  -e "All done!\nTo mount the crypt container just type the following in terminal as root:\ncryptsetup luksOpen /dev/$MDARRAY $CONTAINER\nmount /dev/mapper/$CONTAINER /mnt/$CONTAINER" 2>&1 | tee $LOG
+
+# if using this filesystem for samba shares, it's recommended to use btrfs subvolumes for shared folders
+# this will allow per-share snapshots, and using the "previous history" feature in Windows.
 
 exit 0
 
