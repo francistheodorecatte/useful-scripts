@@ -7,6 +7,36 @@ LOG="./raid_setup.log"
 CONTAINER="five-nines"
 MDARRAY="md0"
 
+# function to convert seconds to days, hours, minutes, seconds.
+# useful for converting the difference in seconds from two unix epoch timestamps
+# e.g. for timing how long a section of a script takes where normal timing commands won't work
+function convert_time(){
+	var=$1
+	min=0
+	hour=0
+	day=0
+	if ((var>59)); then
+		((sec=var%60))
+		((var=var/60))
+		if ((var>59)); then
+			((min=var%60))
+			((var=var/60))
+			if ((var>23)); then
+				((hour=var%24))
+				((var=var/24))
+			else
+				((hour=var))
+			fi
+		else
+			((min=var))
+		fi
+	else
+		((sec=var))
+	fi
+	echo "$day"d "$hour"h "$min"m "$sec"s
+}
+
+
 echo "WARNING!!! This will wipe ALL /dev/sdX disks!!" 2>&1 | tee $LOG
 read -p "Press CTRL+C to quit, or any other key to continue." -n1 -s
 
@@ -25,9 +55,12 @@ apt update && apt install -y e2fsprogs mdadm pv smartmontools btrfs-tools hdparm
 # this is to wipe them and to prepare for the badblocks test below
 echo "Wiping all disks…" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
+	timer='date +%s'
 	[-e $Dev]
 	&& pv -tpreb /dev/zero | dd of=/dev/${Dev##*/} bs=4096 conv=notrunc,noerror 2>&1 | tee $LOG
 	&& sleep 2
+	timer=('date +%s'-$timer)
+	echo "Erasing /dev/${Dev##*/} took " convert_time($timer) 2>&1 | tee $LOG
 done
 
 # run badblocks to check the disk actually wrote all zeros
@@ -35,12 +68,15 @@ done
 # then run a long online SMART test and list its results
 echo "Running disk checks…" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
+	timer='date +%s'
 	[-e $Dev]
 	&& badblocks -sv -t 0x00 /dev/${Dev##*/} 2>&1 | tee $LOG
 	&& smartctl -t long -C /dev/${Dev##*/} 2>&1 | tee $LOG
 	&& smartctl -H /dev/${Dev##*/} 2>&1 | tee $LOG
 	&& smartctl -l selftest /dev/${Dev##*/} 2>&1 | tee $LOG
 	&& sleep 2
+	timer=('date +%s'-$timer)
+	echo "Checking /dev/${Dev##*/} took " convert_time($timer) 2>&1 | tee $LOG
 done
 
 # create optimally aligned GPT partitions
@@ -59,7 +95,8 @@ for Dev in /sys/block/sd* ; do
 done
 
 # create an md RAID6
-mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG
+mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG && timer=date +"%s"
+timer='date +%s'
 
 echo "Installing required libraries for cryptodev and cryptsetup compilation…" 2>&1 | tee $LOG
 # uncomment source repositories and install required libraries
@@ -91,7 +128,7 @@ cd cryptsetup-master/
 ldconfig
 cd ..
 
-# pause the scripte until the initial RAID sync completes
+# pause the script until the initial RAID sync completes
 # writing any data to the disks will slow the sync down by a factor of 12-15X
 # for referece, that's 120-150MB/s down to ~10MB/s(!)
 # RAID1/5/6 has NEGLIGIBLE redundancy until the data parity blocks are written to disk during the initial sync
@@ -104,7 +141,12 @@ while [ -n "$(mdadm --detail /dev/$MDARRAY | grep -ioE 'State :.*resyncing')" ];
 	printf "\r${spin:$i:1}"
 	sleep .1
 done
-echo "RAID sync complete!" 2>&1 | tee $LOG
+
+# get the number of seconds since the timer started and convert to days, hours, minutes, seconds.
+timer=('date +%s'-$timer)
+executiontime=convert_time($timer)
+echo "RAID sync complete after $executiontime!" 2>&1 | tee $LOG
+
 
 # this cipher is needed to take advantage of the marvell CESA module
 # the block size is set to 4096 to reduce the encryption IO by 4x, as the default blocksize is 512
@@ -119,7 +161,10 @@ cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 --sector-size 4096 --type luks2 
 # https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions#2-setup
 echo -e "Opening crypt container and wiping it.\nAgain, enter passkey when prompted…" 2>&1 | tee $LOG
 cryptsetup luksOpen /dev/$MDARRAY $CONTAINER
+timer='date +%s'
 pv -tpreb /dev/zero | dd of=/dev/mapper/$CONTAINER bs=4096 conv=notrunc,noerror
+timer=('date +%s'-$timer)
+echo "Wiping crypt container took " convert_time($timer) 2>&1 | tee $LOG
 
 # again, set the block size to 4096 to reduce IO (and match the LUKS container)
 echo "Formatting crypt container as btrfs…" 2>&1 | tee $LOG
