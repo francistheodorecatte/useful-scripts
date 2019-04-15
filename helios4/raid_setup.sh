@@ -1,9 +1,13 @@
 #!/bin/bash
 
+# Helios4 md RAID6+luks2+btrfs setup script
+# Use with caution.
+
 LOG="./raid_setup.log"
 CONTAINER="five-nines"
+MDARRAY="md0"
 
-echo "WARNING!!! This will wipe ALL /dev/sdX disks!!"
+echo "WARNING!!! This will wipe ALL /dev/sdX disks!!" 2>&1 | tee $LOG
 read -p "Press CTRL+C to quit, or any other key to continue." -n1 -s
 
 if [[ $EUID -ne 0 ]]; then
@@ -11,11 +15,14 @@ if [[ $EUID -ne 0 ]]; then
 	exit 1
 fi
 
-echo "A full log will be available in $LOG"
+echo "A full log will be available in $LOG"  2>&1 | tee $LOG
 
+# in armbian these are probably all installed by default but better safe than sorry
 echo "Installing some necessary software.." 2>&1 | tee $LOG
 apt update && apt install -y e2fsprogs mdadm pv smartmontools btrfs-tools hdparm
 
+# writing zeros over all the disks
+# this is to wipe them and to prepare for the badblocks test below
 echo "Wiping all disks…" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
 	[-e $Dev]
@@ -23,6 +30,9 @@ for Dev in /sys/block/sd* ; do
 	&& sleep 2
 done
 
+# run badblocks to check the disk actually wrote all zeros
+# if it didn't, the disk is probably bad
+# then run a long online SMART test and list its results
 echo "Running disk checks…" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
 	[-e $Dev]
@@ -33,6 +43,7 @@ for Dev in /sys/block/sd* ; do
 	&& sleep 2
 done
 
+# create optimally aligned GPT partitions
 echo "Setting up partitions…" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
 	[-e $Dev]
@@ -41,19 +52,22 @@ for Dev in /sys/block/sd* ; do
 	&& sleep 2
 done
 
-echo "Assembling RAID array…" 2>&1 | tee $LOG 
+echo "Assembling RAID array…" 2>&1 | tee $LOG
 disks=()
 for Dev in /sys/block/sd* ; do
 	disks+=("/dev/${Dev##*/}")
 done
 
-mdadm --create --verbose /dev/md0 --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG
+# create an md RAID6
+mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG
 
 echo "Installing required libraries for cryptodev and cryptsetup compilation…" 2>&1 | tee $LOG
 # uncomment source repositories and install required libraries
+# this sed command is technically unsafe since it will uncomment repositories you may not want.
 sed -e "s/^# deb/deb/g" /etc/apt/sources.list
 apt update && apt install -y build-essential uuid-dev libdevmapper-dev libpopt-dev pkg-config libgcrypt-dev libblkid-dev build-essential fakeroot devscripts debhelper install linux-headers-next-mvebu git
 
+# all the Helios4 kernels are built with the CESA module afaik
 echo "Loading the Marvel CESA module and enabling it on boot…"  2>&1 | tee $LOG
 modprobe marvell_cesa
 echo "marvell_cesa" >> /etc/modules
@@ -68,6 +82,8 @@ modprobe cryptodev
 echo "cryptodev" >> /etc/modules
 cd ..
 
+# cryptsetup 2.x needed for LUKS2 support
+# LUKS2 gives us the ability to set the block size to 4096 instead of 512
 echo "Downloading, compiling, and installing Cryptsetup 2…" 2>&1 | tee $LOG
 wget -q -O - https://gitlab.com/cryptsetup/cryptsetup/-/archive/master/cryptsetup-master.tar.gz | tar xvzf &
 cd cryptsetup-master/
@@ -75,30 +91,39 @@ cd cryptsetup-master/
 ldconfig
 cd ..
 
-#don't continue until RAID sync completes.
+# don't continue until RAID sync completes
+# writing any data to the disks will slow the sync down by a factor of 10-12X
 spin='-\|/'
 echo "Waiting for RAID sync to complete. This may take a while…" 2>&1 | tee $LOG
-while [ -n "$(mdadm --detail /dev/md0 | grep -ioE 'State :.*resyncing')" ]; do
+while [ -n "$(mdadm --detail /dev/$MDARRAY | grep -ioE 'State :.*resyncing')" ]; do
 	i=$(( (i+1) %4 ))
 	printf "\r${spin:$i:1}"
 	sleep .1
 done
 echo "RAID sync complete!" 2>&1 | tee $LOG
 
+# this cipher is needed to take advantage of the marvell CESA module
+# the block size is set to 4096 to reduce the encryption IO by 4x, as the default blocksize is 512
+# see this benchmarking thread on the armbian forum for more info:
+# https://forum.armbian.com/topic/8486-helios4-cryptographic-engines-and-security-accelerator-cesa-benchmarking/
 echo -e "Creating crypt container.\nEnter passkey when prompted…" 2>&1 | tee $LOG
-cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 -- sector-size 4096 --type luks2 luksFormat /dev/md0 2>&1 | tee $LOG
+cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 -- sector-size 4096 --type luks2 luksFormat /dev/$MDARRAY 2>&1 | tee $LOG
 
+# make sure the crypt container is filled with all zeros before creating partition
+# this essentially uses the encryption cipher to increase entropy by filling the disks with random data
 echo -e "Opening crypt container and wiping it.\nAgain, enter passkey when prompted…" 2>&1 | tee $LOG
+cryptsetup luksOpen /dev/$MDARRAY $CONTAINER
 pv -tpreb /dev/zero | dd of=/dev/mapper/$CONTAINER bs=4096 conv=notrunc,noerror
 
+# again, set the block size to 4096 to reduce IO (and match the LUKS container)
 echo "Formatting crypt container as btrfs…" 2>&1 | tee $LOG
-mkfs.btrfs -s 4096 -d single -L CONTAINER /dev/mapper/$CONTAINER
+mkfs.btrfs -s 4096 -d single -L $CONTAINER /dev/mapper/$CONTAINER
 
 echo "Mounting btrfs partition to /mnt/$CONTAINER" 2>&1 | tee $LOG
 mkdir /mnt/$CONTAINER
 mount /dev/mapper/$CONTAINER /mnt/$CONTAINER
 
-echo  -e "All done!\nTo mount the crypt container just type the following in terminal as root:\ncryptsetup luksOpen /dev/md0 $CONTAINER\nmount /dev/mapper/$CONTAINER /mnt/$CONTAINER" 2>&1 | tee $LOG
+echo  -e "All done!\nTo mount the crypt container just type the following in terminal as root:\ncryptsetup luksOpen /dev/$MDARRAY $CONTAINER\nmount /dev/mapper/$CONTAINER /mnt/$CONTAINER" 2>&1 | tee $LOG
 
 exit 0
 
