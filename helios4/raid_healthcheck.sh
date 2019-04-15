@@ -4,6 +4,7 @@
 # btrfs over md RAID56 health check
 # this is similar to what Synology seems to do on their NAS'
 # necessary until btrfs RAID56 is safe to use in production
+# see the btrfs status page for more info: https://btrfs.wiki.kernel.org/index.php/Status#RAID56
 # runs an md resync (scrub) if btrfs reports any errors
 # btrfs has no direct control over the data on the disks when running over md, hence why this is needed
 # it's recommend to run a monthly md resync anyway to prevent silent data corruption
