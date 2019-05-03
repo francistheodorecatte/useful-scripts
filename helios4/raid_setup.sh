@@ -147,6 +147,10 @@ timer=('date +%s'-$timer)
 executiontime=convert_time($timer)
 echo "RAID sync complete after $executiontime!" 2>&1 | tee $LOG
 
+# make sure md array is started on boot
+echo "Adding md array to mdadm.conf so it starts on boot." 2>&1 | tee $LOG
+mdadm --detail --scan | tee -a /etc/mdadm/mdadm.conf
+update-initramfs -u
 
 # this cipher is needed to take advantage of the marvell CESA module
 # the block size is set to 4096 to reduce the encryption IO by 4x, as the default blocksize is 512
