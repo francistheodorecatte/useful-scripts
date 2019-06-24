@@ -9,7 +9,7 @@ pwmin=6
 pwmax=15
 SECONDS=0
 
-while (( SECONDS < runtime)); do
+while (( $SECONDS < $runtime)); do
 	shuf ./dictionary.txt | ./pp64.bin --pw-min=$pwmin --pw-max=$pwmax | hashcat -m $mode -w 4 -a 0 --generate-rules-func-min=999 --generate-rules-func-max=300000 -O -o password.out password.hash
 done
 
