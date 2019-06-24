@@ -36,15 +36,17 @@ function convert_time(){
 	echo "$day"d "$hour"h "$min"m "$sec"s
 }
 
-
-echo "WARNING!!! This will wipe ALL /dev/sdX disks!!" 2>&1 | tee $LOG
+echo "Helios4 MDRAID6 + btrfs + LUKS2 setup script by Francis Theodore Catte" 2>&1 | tee $LOG
+echo "This script is mostly automated, but will pause occasionally, and will need monitoring." 2>&1 | tee $LOG
+echo "Reading the log carefully in another terminal before continuing at prompts like the one below is HIGHLY recommended!" 2>&1 | tee $LOG
 read -p "Press CTRL+C to quit, or any other key to continue." -n1 -s
 
 if [[ $EUID -ne 0 ]]; then
-	echo -e "You need to run this script as root, or with sudo!\nExiting..."
+	echo -e "\nYou need to run this script as root, or with sudo!\nExiting..."
 	exit 1
 fi
 
+echo "WARNING!!! This will wipe ALL /dev/sdX disks!!" 2>&1 | tee $LOG
 echo "A full log will be available in $LOG"  2>&1 | tee $LOG
 
 # in armbian these are probably all installed by default but better safe than sorry
@@ -53,7 +55,7 @@ apt update && apt install -y e2fsprogs mdadm pv smartmontools btrfs-tools hdparm
 
 # writing zeros over all the disks
 # this is to wipe them and to prepare for the badblocks test below
-echo "Wiping all disks…" 2>&1 | tee $LOG
+echo -e "Wiping all disks…\nThis may take a very long time!" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
 	timer='date +%s'
 	[-e $Dev]
@@ -66,11 +68,11 @@ done
 # run badblocks to check the disk actually wrote all zeros
 # if it didn't, the disk is probably bad
 # then run a long online SMART test and list its results
-echo "Running disk checks…" 2>&1 | tee $LOG
+echo -e "Running disk checks…\nThis may take a very long time!" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
 	timer='date +%s'
 	[-e $Dev]
-	&& badblocks -sv -t 0x00 /dev/${Dev##*/} 2>&1 | tee $LOG
+	&& badblocks -sv -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG
 	&& smartctl -t long -C /dev/${Dev##*/} 2>&1 | tee $LOG
 	&& smartctl -H /dev/${Dev##*/} 2>&1 | tee $LOG
 	&& smartctl -l selftest /dev/${Dev##*/} 2>&1 | tee $LOG
@@ -78,6 +80,17 @@ for Dev in /sys/block/sd* ; do
 	timer=('date +%s'-$timer)
 	echo "Checking /dev/${Dev##*/} took " convert_time($timer) 2>&1 | tee $LOG
 done
+
+echo -e "Disk checks finished\n Before continuing, read over the log located at $LOG for the badblocks and smartctl reports."
+echo -e "Additionally, each disk will have a badblocks_{FOO}.txt in the script directory.\bIf they're empty, badblocks reported no bad sectors and can be ignored.\nIf they're NOT empty, trash that drive! That means the disk has run out of sector reallocation space and can no longer mask bad sectors itself.\nThis should be noted by a high reallocated sector count in the smartctl report for this drive."
+read -p "Press CTRL+C to quit, or any other key to continue." -n1 -s
+
+# note that you can techinically use the disk if badblocks reports bad sectors, and the disk reports a high reallocated sector count!
+# but ONLY in the case if rerunning the badblocks command above for that disk consistently returns the same bad blocks, and no new ones are added.
+# this usually means the bad sector count is relatively stable, and on a new drive might be from a non-serious defect that made it through QC.
+# HOWEVER it is NOT recommended to do this! if it's a new drive, running out of sector reallocation space is grounds for a warranty return!!
+# this is an important thing to remember: the 'redundant' in RAID only means disk redundancy; DO NOT CONFLATE THAT WITH DATA REDUNDANCY.
+# defective disks can do much more insidious things than outright failing!
 
 # create optimally aligned GPT partitions
 echo "Setting up partitions…" 2>&1 | tee $LOG
@@ -135,7 +148,7 @@ cd ..
 # at 10MB/s, on an array of 8TB disks, the initial sync could take literally months to complete
 # hence why my script waits for the sync to complete!
 spin='-\|/'
-echo "Waiting for initial RAID sync to complete. This may take a while…" 2>&1 | tee $LOG
+echo -e "Waiting for initial RAID sync to complete.\n This may take a long time!" 2>&1 | tee $LOG
 while [ -n "$(mdadm --detail /dev/$MDARRAY | grep -ioE 'State :.*resyncing')" ]; do
 	i=$(( (i+1) %4 ))
 	printf "\r${spin:$i:1}"

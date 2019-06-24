@@ -51,6 +51,7 @@ if ! { "btrfs device stats /mnt/five-nines | grep -vE ' 0$'" }; then
 
 	# using mode lowmem because with a huge filesystem a check could cause an out of memory error...
 	# if the check fails it'll return a non-zero value and this if statement will trigger
+	# note that the lowmem mode was considered experimental and buggy until kernel version 4.17
 	if ! { 'btrfs check --mode=lowmem --force --read-only /mnt/five-nines' }; then
 		echo "btrfs check failed! leaving filesystem read-only to prevent further dataloss!" 2>&1
 		echo -e "${RED}backing up all data and unmounting the filesystem is recommended before taking any further action.${NC}" 2>&1
