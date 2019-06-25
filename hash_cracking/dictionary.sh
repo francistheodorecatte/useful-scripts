@@ -25,4 +25,4 @@ wget http://downloads.skullsecurity.org/passwords/facebook-phished.txt.bz2
 wget http://downloads.skullsecurity.org/passwords/carders.cc.txt.bz2
 wget http://downloads.skullsecurity.org/passwords/english.txt.bz2
 bunzip2 *.bz2
-cat *.txt >> ~/dictionary.txt
+cat *.txt | shuf >> ~/dictionary.txt
