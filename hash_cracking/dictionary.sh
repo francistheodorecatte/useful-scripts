@@ -6,8 +6,8 @@
 # once downloaded, they're unpacked, and shuffled together into a single file.
 # here, it's just dictionary.txt in the root of your home folder.
 
-mkdir ~/wordlists
-cd ~/wordlists
+mkdir wordlists
+cd wordlists
 wget http://downloads.skullsecurity.org/passwords/john.txt.bz2
 wget http://downloads.skullsecurity.org/passwords/cain.txt.bz2
 wget http://downloads.skullsecurity.org/passwords/conficker.txt.bz2
@@ -25,4 +25,4 @@ wget http://downloads.skullsecurity.org/passwords/facebook-phished.txt.bz2
 wget http://downloads.skullsecurity.org/passwords/carders.cc.txt.bz2
 wget http://downloads.skullsecurity.org/passwords/english.txt.bz2
 bunzip2 *.bz2
-cat *.txt | shuf >> ~/dictionary.txt
+cat *.txt | shuf >> ../dictionary.txt

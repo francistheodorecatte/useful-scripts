@@ -3,6 +3,11 @@
 # run hashcat for FOO number of seconds and break the loop
 # then restart the script
 
+if [[ $EUID -ne 0 ]]; then
+   echo -e "You need to run this script as root, or with sudo!\nExiting..."
+   exit 1
+fi
+
 runtime=86400
 mode=500
 pwmin=6
