@@ -12,17 +12,20 @@ dedupe_setup.sh example script for setting up out-of-band btrfs deduplication, u
 If you're using Samba shares, I recommend using btrfs subvolumes for shared folders.
 
 Create shared folders as btrfs subvolumes like so (five-nines used as an example):
+```bash
 btrfs subvolume create /mnt/five-nines/@test
 brtfs subvolume create /mnt/five-nines/@test/.snapshots
+```
 
 The .snapshot directory allows creating and deleting snapshots like so:
+```bash
 btrfs subvolume snapshot -r /mnt/five-nines/@test /mnt/five-nines/@test/.snapshots/@GMT_`date +%Y.%m.%d-%H.%M.%S`
 btrfs subvolume delete /mnt/five-nines/@test/.snapshots/@GMT_2019.04.15-11.55.05
+```
 
 Automating snapshots is possible, too.
 
 Add the following to your samba config under each share to enable previous history in Windows:
-
 ```
 [test]
 	<-snip->
