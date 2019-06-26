@@ -23,9 +23,11 @@ Automating snapshots is possible, too.
 
 Add the following to your samba config under each share to enable previous history in Windows:
 
-> [test]
-> 	<-snip->
-> 	vfs objects = shadow_copy2
-> 	shadow:format = @GMT_%Y.%m.%d-%H.%M.%S
-> 	shadow:sort = desc
-> 	shadow:snapdir = .snapshots
+```
+[test]
+	<-snip->
+	vfs objects = shadow_copy2
+	shadow:format = @GMT_%Y.%m.%d-%H.%M.%S
+	shadow:sort = desc
+	shadow:snapdir = .snapshots
+```
