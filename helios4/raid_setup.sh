@@ -189,9 +189,9 @@ mkfs.btrfs -s 4096 -d single -L $CONTAINER /dev/mapper/$CONTAINER
 
 echo "Mounting btrfs partition to /mnt/$CONTAINER" 2>&1 | tee $LOG
 mkdir /mnt/$CONTAINER
-mount /dev/mapper/$CONTAINER /mnt/$CONTAINER
+mount -o compression=zstd,autodefrag /dev/mapper/$CONTAINER /mnt/$CONTAINER	#note that ZSTD compression required kernel 4.14 or newer
 
-echo  -e "All done!\nTo mount the crypt container just type the following in terminal as root:\ncryptsetup luksOpen /dev/$MDARRAY $CONTAINER\nmount /dev/mapper/$CONTAINER /mnt/$CONTAINER" 2>&1 | tee $LOG
+echo  -e "All done!\nTo mount the crypt container just type the following in terminal as root:\ncryptsetup luksOpen /dev/$MDARRAY $CONTAINER\nmount -o compression=zstd,autodefrag /dev/mapper/$CONTAINER /mnt/$CONTAINER" 2>&1 | tee $LOG
 
 # if using this filesystem for samba shares, it's recommended to use btrfs subvolumes for shared folders
 # this will allow per-share snapshots, and using the "previous history" feature in Windows.
