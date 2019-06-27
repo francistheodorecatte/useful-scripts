@@ -14,6 +14,9 @@
 # after editing to fit your needs, in crontab add a line like:
 # @hourly /root/raid_healthcheck.sh
 # adding a MAILTO=admin@yourserver.local is recommended!
+MNTPNT="/mnt/five-nines"
+MNTNM="five-nines"
+DEVPTH="/dev/mapper/five-nines"
 
 # NOTES:
 # in my setup I'm running a luks container over the md RAID6, hence the /dev/mapper device
@@ -25,7 +28,7 @@
 # or the filesystem failed to mount on boot
 # read only probably means bad things happened (either this script triggered or fs panic)
 # check if that read-only check actually works, btw
-if ! { 'mountpoint /mnt/five-nines' } || {"grep '^ro$' /proc/fs/*/five-nines/options"; then
+if ! { 'mountpoint $MNTPNT' } || {"grep '^ro$' /proc/fs/*/$MNTNM/options"; then
 	exit 1
 fi
 
@@ -35,9 +38,11 @@ if { "$(mdadm --detail /dev/md0 | grep -ioE 'State :.*resyncing')" }; then
 fi
 
 # if any of the btrfs devices stats are non-zero run an md scrub.
-if ! { "btrfs device stats /mnt/five-nines | grep -vE ' 0$'" }; then
+if ! { "btrfs device stats $MNTPNT | grep -vE ' 0$'" }; then
+	options=findmnt $MNTPNT -n -o OPTIONS 	#grab the original mount options before doing anything
+
 	echo "btrfs errors detected; remounting as read-only to prevent dataloss." 2>&1
-	mount -o remount,ro,recovery /dev/mapper/five-nines /mnt/five-nines
+	mount -o remount,ro,recovery $MNTPNT
 
 	echo "triggering an md resync." 2>&1
 	echo check > /sys/block/md0/md/sync_action
@@ -54,14 +59,14 @@ if ! { "btrfs device stats /mnt/five-nines | grep -vE ' 0$'" }; then
 	# using mode lowmem because with a huge filesystem a check could cause an out of memory error...
 	# if the check fails it'll return a non-zero value and this if statement will trigger
 	# note that the lowmem mode was considered experimental and buggy until kernel version 4.17
-	if ! { 'btrfs check --mode=lowmem --force --read-only /mnt/five-nines' }; then
+	if ! { 'btrfs check --mode=lowmem --force --read-only $MNTPNT' }; then
 		echo "btrfs check failed! leaving filesystem read-only to prevent further dataloss!" 2>&1
 		echo -e "${RED}backing up all data and unmounting the filesystem is recommended before taking any further action.${NC}" 2>&1
 		echo -e "investigatation avenues:\n-use smartctl to check disk health\n-run an md repair\n-run btrfs check manually" 2>&1
 		exit 1
 	else
-		echo "btrfs check came back clean! remounting as RW." 2>&1
-		mount -o remount,rw /dev/mapper/five-nines /mnt/five-nines
+		echo "btrfs check came back clean! remounting with original options." 2>&1
+		mount -o remount,$options $MNTPNT
 	fi
 fi
 
