@@ -6,6 +6,7 @@
 LOG="./raid_setup.log"
 CONTAINER="five-nines"
 MDARRAY="md0"
+USER=logname
 
 # function to convert seconds to days, hours, minutes, seconds.
 # useful for converting the difference in seconds from two unix epoch timestamps
@@ -35,6 +36,10 @@ function convert_time(){
 	fi
 	echo "$day"d "$hour"h "$min"m "$sec"s
 }
+
+# create log file as non-root user to avoid root permissions
+# this technique will be used later for running git clones
+sudo -u $USER touch $LOG
 
 echo "Helios4 MDRAID6 + btrfs + LUKS2 setup script by Francis Theodore Catte" 2>&1 | tee $LOG
 echo "This script is mostly automated, but will pause occasionally, and will need monitoring." 2>&1 | tee $LOG
@@ -108,8 +113,7 @@ for Dev in /sys/block/sd* ; do
 done
 
 # create an md RAID6
-mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG && timer=date +"%s"
-timer='date +%s'
+mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG && timer='date +%s'
 
 echo "Installing required libraries for cryptodev and cryptsetup compilation…" 2>&1 | tee $LOG
 # uncomment source repositories and install required libraries
@@ -123,7 +127,7 @@ modprobe marvell_cesa
 echo "marvell_cesa" >> /etc/modules
 
 echo "Downloading, compiling, and installing Cryptodev…" 2>&1 | tee $LOG
-git clone https://github.com/cryptodev-linux/cryptodev-linux.git
+sudo -u $USER git clone https://github.com/cryptodev-linux/cryptodev-linux.git
 cd cryptodev-linux/
 make
 make install
@@ -137,7 +141,7 @@ cd ..
 # v2.1.0 is the latest as of writing this
 # LUKS2 gives us the ability to set the block size to 4096 instead of 512
 echo "Downloading, compiling, and installing Cryptsetup 2…" 2>&1 | tee $LOG
-git clone -b v2.1.0 https://gitlab.com/cryptsetup/cryptsetup.git
+sudo -u $USER git clone -b v2.1.0 https://gitlab.com/cryptsetup/cryptsetup.git
 cd cryptsetup
 ./configure --prefix=/usr/local
 make
@@ -161,8 +165,7 @@ done
 
 # get the number of seconds since the timer started and convert to days, hours, minutes, seconds.
 timer=('date +%s'-$timer)
-executiontime=convert_time($timer)
-echo "RAID sync complete after $executiontime!" 2>&1 | tee $LOG
+echo "RAID sync complete after " convert_time($timer) "!"  2>&1 | tee $LOG
 
 # make sure md array is started on boot
 echo "Adding md array to mdadm.conf so it starts on boot." 2>&1 | tee $LOG
@@ -194,6 +197,12 @@ mkfs.btrfs -s 4096 -d single -L $CONTAINER /dev/mapper/$CONTAINER
 echo "Mounting btrfs partition to /mnt/$CONTAINER" 2>&1 | tee $LOG
 mkdir /mnt/$CONTAINER
 mount -o compression=zstd,autodefrag /dev/mapper/$CONTAINER /mnt/$CONTAINER	#note that ZSTD compression required kernel 4.14 or newer
+
+# as for the compression, zstd isn't the only compression routine, you can also use zlib and lzo.
+# also, in kernel 5.1 and newer, you can set compression levels via mounting options.
+# e.g. mount -o compression=zstd:9
+# the minimum compression level is 3, the maximum is 15.
+# note that using compression levels higher than 9 nets rapidly diminishing returns on compression vs. performance.
 
 echo  -e "All done!\nTo mount the crypt container just type the following in terminal as root:\ncryptsetup luksOpen /dev/$MDARRAY $CONTAINER\nmount -o compression=zstd,autodefrag /dev/mapper/$CONTAINER /mnt/$CONTAINER" 2>&1 | tee $LOG
 
