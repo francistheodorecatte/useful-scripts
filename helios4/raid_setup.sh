@@ -133,11 +133,15 @@ echo "cryptodev" >> /etc/modules
 cd ..
 
 # cryptsetup 2.x needed for LUKS2 support
+# change the branch to the latest stable version
+# v2.1.0 is the latest as of writing this
 # LUKS2 gives us the ability to set the block size to 4096 instead of 512
 echo "Downloading, compiling, and installing Cryptsetup 2…" 2>&1 | tee $LOG
-wget -q -O - https://gitlab.com/cryptsetup/cryptsetup/-/archive/master/cryptsetup-master.tar.gz | tar xvzf &
-cd cryptsetup-master/
+git clone -b v2.1.0 https://gitlab.com/cryptsetup/cryptsetup.git
+cd cryptsetup
 ./configure --prefix=/usr/local
+make
+make install
 ldconfig
 cd ..
 
