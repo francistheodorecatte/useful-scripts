@@ -36,6 +36,10 @@ fi
 
 # if any of the btrfs devices stats are non-zero run an md scrub.
 if ! { "btrfs device stats /mnt/five-nines | grep -vE ' 0$'" }; then
+	echo "btrfs errors detected; remounting as read-only to prevent dataloss." 2>&1
+	mount -o remount,ro,recovery /dev/mapper/five-nines /mnt/five-nines
+
+	echo "triggering an md resync." 2>&1
 	echo check > /sys/block/md0/md/sync_action
 
 	spin='-\|/'
@@ -45,9 +49,7 @@ if ! { "btrfs device stats /mnt/five-nines | grep -vE ' 0$'" }; then
 		sleep .1
 	done
 
-	# read only needed to keep btrfs check from panicking
-	echo "md scrub finished, remounting as RO and running btrfs check." 2>&1
-	mount -o remount,ro /dev/mapper/five-nines /mnt/five-nines
+	echo "md scrub finished, running btrfs check." 2>&1
 
 	# using mode lowmem because with a huge filesystem a check could cause an out of memory error...
 	# if the check fails it'll return a non-zero value and this if statement will trigger
