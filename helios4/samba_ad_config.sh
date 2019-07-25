@@ -31,7 +31,7 @@ vfs objects = acl_xattr
 map acl inherit = yes
 store dos attributes = yes
 EOF
-)"
+}"
 
 echo "installing wsdd package from openmediavault usul"
 wget -qO - http://packages.openmediavault.org/public/archive.key | apt-key add -
