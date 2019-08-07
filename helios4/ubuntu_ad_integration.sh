@@ -15,10 +15,8 @@ nmcli con mod $iface ipv4.dns $dns
 nmcli con mod $iface ipv4.ignore-auto-dns yes
 #nmcli con down $iface && nmcli con up $iface # danger!!
 
-if ! [ 'dpkg-query -W -f=realmd,sssd,sssd-tools,libnss-sss,libpam-sss,krb5-user,adcli,samba-common-bin' ] ; then
-	apt update
-	apt upgrade -y
-	apt -y install realmd sssd sssd-tools libnss-sss libpam-sss krb5-user adcli samba-common-bin
+if ! [ realmd sssd sssd-tools libnss-sss libpam-sss krb5-user adcli samba-common-bin >/dev/null 2>&1 ]; then
+	apt update && apt upgrade -y && apt -y install realmd sssd sssd-tools libnss-sss libpam-sss krb5-user adcli samba-common-bin
 fi
 
 echo -e "dns_lookup_realm = false\ndns_lookup_kdc = true\nrdns = false" >> /etc/krb5.conf

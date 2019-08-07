@@ -54,7 +54,7 @@ fi
 echo "WARNING!!! This will wipe ALL /dev/sdX disks!!" 2>&1 | tee $LOG
 echo "A full log will be available in $LOG"  2>&1 | tee $LOG
 
-if ! [ 'dpkg-query -W -f=e2fsprogs,mdadm,pv,smartmontools,btrfs-tools,hdparm' ] ; then
+if ! [ dpkg-query -s e2fsprogs mdadm pv smartmontools btrfs-tools hdparm >/dev/null 2>&1 ]; then
 	echo "Installing some necessary software.." 2>&1 | tee $LOG
 	apt update && apt install -y e2fsprogs mdadm pv smartmontools btrfs-tools hdparm
 fi
