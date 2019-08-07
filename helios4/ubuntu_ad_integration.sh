@@ -15,7 +15,7 @@ nmcli con mod $iface ipv4.dns $dns
 nmcli con mod $iface ipv4.ignore-auto-dns yes
 #nmcli con down $iface && nmcli con up $iface # danger!!
 
-if ! [ 'dpkg-query -W -f='${Package}\n' realmd sssd sssd-tools libnss-sss libpam-sss krb5-user adcli samba-common-bin' ] ; then
+if ! [ 'dpkg-query -W -f=realmd,sssd,sssd-tools,libnss-sss,libpam-sss,krb5-user,adcli,samba-common-bin' ] ; then
 	apt update
 	apt upgrade -y
 	apt -y install realmd sssd sssd-tools libnss-sss libpam-sss krb5-user adcli samba-common-bin
