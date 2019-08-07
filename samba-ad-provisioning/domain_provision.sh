@@ -23,7 +23,7 @@ echo "Starting domain creation script"
 echo "Doing some housekeeping..."
 
 # check if these packages are installed
-if ! [ 'dpkg-query -W -f='${Package}\n' samba krb5-config winbind smbclient ntp openssh-server unattended-upgrades apt-listchanges 2>/dev/null' ] ; then
+if ! [ 'dpkg-query -W -f=samba,krb5-config,winbind,smbclient,ntp,openssh-server,unattended-upgrades,apt-listchanges' ] ; then
 	apt update
 	apt upgrade -y
 	apt -y install samba krb5-config winbind smbclient ntp openssh-server unattended-upgrades apt-listchanges # if any aren't, install them.

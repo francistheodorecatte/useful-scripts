@@ -54,9 +54,10 @@ fi
 echo "WARNING!!! This will wipe ALL /dev/sdX disks!!" 2>&1 | tee $LOG
 echo "A full log will be available in $LOG"  2>&1 | tee $LOG
 
-# in armbian these are probably all installed by default but better safe than sorry
-echo "Installing some necessary software.." 2>&1 | tee $LOG
-apt update && apt install -y e2fsprogs mdadm pv smartmontools btrfs-tools hdparm
+if ! [ 'dpkg-query -W -f=e2fsprogs,mdadm,pv,smartmontools,btrfs-tools,hdparm' ] ; then
+	echo "Installing some necessary software.." 2>&1 | tee $LOG
+	apt update && apt install -y e2fsprogs mdadm pv smartmontools btrfs-tools hdparm
+fi
 
 # writing zeros over all the disks
 # this is to wipe them and to prepare for the badblocks test below
