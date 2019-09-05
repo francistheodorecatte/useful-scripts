@@ -8,35 +8,6 @@ CONTAINER="five-nines"
 MDARRAY="md0"
 USER=logname
 
-# function to convert seconds to days, hours, minutes, seconds.
-# useful for converting the difference in seconds from two unix epoch timestamps
-# e.g. for timing how long a section of a script takes where normal timing commands won't work
-function convert_time(){
-	var=$1
-	min=0
-	hour=0
-	day=0
-	if ((var>59)); then
-		((sec=var%60))
-		((var=var/60))
-		if ((var>59)); then
-			((min=var%60))
-			((var=var/60))
-			if ((var>23)); then
-				((hour=var%24))
-				((var=var/24))
-			else
-				((hour=var))
-			fi
-		else
-			((min=var))
-		fi
-	else
-		((sec=var))
-	fi
-	echo "$day"d "$hour"h "$min"m "$sec"s
-}
-
 # create log file as non-root user to avoid root permissions
 # this technique will be used later for running git clones
 sudo -u $USER touch $LOG
@@ -63,28 +34,21 @@ fi
 # this is to wipe them and to prepare for the badblocks test below
 echo -e "Wiping all disks…\nThis may take a very long time!" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
-	timer='date +%s'
-	[-e $Dev]
-	&& pv -tpreb /dev/zero | dd of=/dev/${Dev##*/} bs=4096 conv=notrunc,noerror 2>&1 | tee $LOG
-	&& sleep 2
-	timer=('date +%s'-$timer)
-	echo "Erasing /dev/${Dev##*/} took " convert_time($timer) 2>&1 | tee $LOG
+	echo -e "Wiping /dev/${Dev##*/}" 2>&1 | tee $LOG
+	pv -tpreb /dev/zero | dd of=/dev/${Dev##*/} bs=4096 conv=notrunc,noerror 2>&1 | tee $LOG && sleep 2
 done
 
 # run badblocks to check the disk actually wrote all zeros
 # if it didn't, the disk is probably bad
 # then run a long online SMART test and list its results
-echo -e "Running disk checks…\nThis may take a very long time!" 2>&1 | tee $LOG
+#!/bin/bash
+echo -e "Running disk checks ^` \nThis may take a very long time!" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
-	timer='date +%s'
-	[-e $Dev]
-	&& badblocks -sv -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG
-	&& smartctl -t long -C /dev/${Dev##*/} 2>&1 | tee $LOG
-	&& smartctl -H /dev/${Dev##*/} 2>&1 | tee $LOG
-	&& smartctl -l selftest /dev/${Dev##*/} 2>&1 | tee $LOG
-	&& sleep 2
-	timer=('date +%s'-$timer)
-	echo "Checking /dev/${Dev##*/} took " convert_time($timer) 2>&1 | tee $LOG
+        badblocks -sv -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG \
+        && smartctl -t long -C /dev/${Dev##*/} 2>&1 | tee $LOG \
+        && smartctl -H /dev/${Dev##*/} 2>&1 | tee $LOG \
+        && smartctl -l selftest /dev/${Dev##*/} 2>&1 | tee $LOG \
+        && sleep 2
 done
 
 echo -e "Disk checks finished\n Before continuing, read over the log located at $LOG for the badblocks and smartctl reports."
@@ -114,7 +78,7 @@ for Dev in /sys/block/sd* ; do
 done
 
 # create an md RAID6
-mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG && timer='date +%s'
+mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG 
 
 echo "Installing required libraries for cryptodev and cryptsetup compilation…" 2>&1 | tee $LOG
 # uncomment source repositories and install required libraries
@@ -164,9 +128,7 @@ while [ -n "$(mdadm --detail /dev/$MDARRAY | grep -ioE 'State :.*resyncing')" ];
 	sleep .1
 done
 
-# get the number of seconds since the timer started and convert to days, hours, minutes, seconds.
-timer=('date +%s'-$timer)
-echo "RAID sync complete after " convert_time($timer) "!"  2>&1 | tee $LOG
+echo "RAID sync complete!" 2>&1 | tee $LOG
 
 # make sure md array is started on boot
 echo "Adding md array to mdadm.conf so it starts on boot." 2>&1 | tee $LOG
@@ -186,10 +148,7 @@ cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 --sector-size 4096 --type luks2 
 # https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions#2-setup
 echo -e "Opening crypt container and wiping it.\nAgain, enter passkey when prompted…" 2>&1 | tee $LOG
 cryptsetup luksOpen /dev/$MDARRAY $CONTAINER
-timer='date +%s'
 pv -tpreb /dev/zero | dd of=/dev/mapper/$CONTAINER bs=4096 conv=notrunc,noerror
-timer=('date +%s'-$timer)
-echo "Wiping crypt container took " convert_time($timer) 2>&1 | tee $LOG
 
 # again, set the block size to 4096 to reduce IO (and match the LUKS container)
 echo "Formatting crypt container as btrfs…" 2>&1 | tee $LOG
