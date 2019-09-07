@@ -34,7 +34,7 @@ fi
 # this is to wipe them and to prepare for the badblocks test below
 echo -e "Wiping all disks…\nThis may take a very long time!" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
-	echo -e "Wiping /dev/${Dev##*/}" 2>&1 | tee $LOG
+	echo -e "Wiping /dev/${Dev##*/}..." 2>&1 | tee $LOG
 	pv -tpreb /dev/zero | dd of=/dev/${Dev##*/} bs=4096 conv=notrunc,noerror 2>&1 | tee $LOG && sleep 2
 done
 
@@ -44,7 +44,8 @@ done
 #!/bin/bash
 echo -e "Running disk checks ^` \nThis may take a very long time!" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
-        badblocks -sv -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG \
+	echo -e "Checking /dev/${Dev##*/} for bad blocks..." 2>&1 | tee $LOG
+        badblocks -sv -b 4096 -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG \
         && smartctl -t long -C /dev/${Dev##*/} 2>&1 | tee $LOG \
         && smartctl -H /dev/${Dev##*/} 2>&1 | tee $LOG \
         && smartctl -l selftest /dev/${Dev##*/} 2>&1 | tee $LOG \
