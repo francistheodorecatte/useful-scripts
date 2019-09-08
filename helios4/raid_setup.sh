@@ -66,9 +66,8 @@ read -p "Press CTRL+C to quit, or any other key to continue." -n1 -s
 # create optimally aligned GPT partitions
 echo "Setting up partitions…" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
-	[-e $Dev]
-	&& parted /dev/${Dev##*/} mklabel gpt 2>&1 | tee $LOG
-	&& parted -a optimal /dev/${Dev##*/} mkpart primary 0% 100% 2>&1 | tee $LOG
+	parted -s /dev/${Dev##*/} mklabel gpt 2>&1 | tee $LOG \
+	&& parted -a optimal -s /dev/${Dev##*/} mkpart primary 0% 100% 2>&1 | tee $LOG \
 	&& sleep 2
 done
 
@@ -79,7 +78,7 @@ for Dev in /sys/block/sd* ; do
 done
 
 # create an md RAID6
-mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG 
+yes | mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG 
 
 echo "Installing required libraries for cryptodev and cryptsetup compilation…" 2>&1 | tee $LOG
 # uncomment source repositories and install required libraries
