@@ -6,6 +6,7 @@
 LOG='$(dirname "$0")/raid_setup.log'
 CONTAINER="five-nines"
 MDARRAY="md0"
+RAIDLEVEL=6 #change to whatever RAID level you want to use
 USER=$(logname)
 
 # create log file as non-root user to avoid root permissions
@@ -77,8 +78,8 @@ for Dev in /sys/block/sd* ; do
 	disks+=("/dev/${Dev##*/}")
 done
 
-# create an md RAID6
-yes | mdadm --create --verbose /dev/$MDARRAY --level=6 --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG 
+# create an md RAID
+yes | mdadm --create --verbose /dev/$MDARRAY --level=$RAIDLEVEL --raid-devices=${#disks[@]}  ${disks[*]} 2>&1 | tee $LOG 
 
 echo "Installing required libraries for cryptodev and cryptsetup compilation ^` " 2>&1 | tee $LOG
 # uncomment source repositories and install required libraries

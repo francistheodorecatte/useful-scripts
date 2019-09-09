@@ -4,7 +4,7 @@ A couple scripts I use(d) when setting up and maintaining my Helios4 NAS.
 These were tailored to my setup, and you should edit them to suit your needs. Also note that some of these are untested, so use with caution!!
 
 ### USAGE:
-* raid_setup.sh for creating my RAID setup on a fresh install of Armbian Bionic on a Helios 4
+* raid_setup.sh for creating my RAID setup (tested on a fresh install of Armbian Buster on a Helios 4; should work with Stretch and Bionic)
 * raid_healthcheck.sh will check for btrfs errors and run an md sync, then btrfs check if needed.
 * dedupe_setup.sh example script for setting up out-of-band btrfs deduplication, using duperemover and cron.
 
