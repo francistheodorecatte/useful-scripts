@@ -35,8 +35,8 @@ duperemove -dr --hashfile=/mnt/$btrfs_root/hashfile.db -b $blksz --skip-zeroes
 exit 0
 EOF
 
-	chmod 755 /etc/cron.daily/plexmediaserver
-	chmod u+x /etc/cron.daily/plexmediaserver
+	chmod 755 /etc/cron.daily/dedupe
+	chmod u+x /etc/cron.daily/dedupe
 
 	exit 0
 fi
