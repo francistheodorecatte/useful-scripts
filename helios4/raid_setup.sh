@@ -3,7 +3,7 @@
 # Helios4 md RAID6+luks2+btrfs setup script
 # Use with caution.
 
-LOG="./raid_setup.log"
+LOG='$(dirname "$0")/raid_setup.log'
 CONTAINER="five-nines"
 MDARRAY="md0"
 USER=$(logname)
