@@ -29,10 +29,22 @@ https://github.com/Winetricks/winetricks
 Now setup a 32bit wine prefix:
 export WINEARCH=win32 WINEPREFIX=~/.wine32
 
+To make this permanent, run this command:
+echo "export WINEARCH=win32 WINEPREFIX=~/.wine32" >> ~/.bashrc
+
 And run winetricks to install some necessary libraries:
 winetricks dotnet48 corefonts gdiplus
 
 Then you can use wine to install Tesira:
 wine tesira-software-v3-12.exe
 
-With the tesira software installed, you SHOULD be able to run it using wine!
+With the tesira software now installed, it should start and work pretty flawlessly.
+
+There's just one remaining issue, where the titlebar is rendered twice. Once by the Tesira Software exe, and then a second time by Wine itself. They overlap only a little bit, and on small screens wastes a lot of screen realestate (which is already at a premium with this program.) This is easily fixed, however.
+
+Run winecfg, and under the 'Applications' tab, click 'Add application' and browse to Tesira.exe. Once selected browse over to the 'Graphics' tab and uncheck 'Allow the window manager to decorate the windows'. Hit Apply and exit winecfg. Next time you run the Tesira Software, only Tesira titlebar will render.
+
+If you run into any other issues, DM me on github @phineasthecat.
+
+Cheers!
+
