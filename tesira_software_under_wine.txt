@@ -1,0 +1,38 @@
+Guide for running the Biamp Tesira Software (a .NET Windows app) under Linux using Wine.
+
+Using Xubuntu 18.04/GalliumOS3.0, Wine 4.16-staging, and winetricks-master.
+
+Tested on the Tesira Software version 3.12.
+
+Instructions are as follows--
+Add the i386 architecture to apt:
+sudo dpkg --add-architecture i386
+
+Remove any old package versions of wine or winetricks:
+sudo apt remove --purge wine*
+
+Add the following repositories:
+sudo add-apt-repository https://dl.winehq.org/wine-builds/ubuntu/
+sudo add-apt-repository https://download.opensuse.org/repositories/Emulators:/Wine:/Debian/xUbuntu_18.04/ ./
+wget -qO - https://dl.winehq.org/wine-builds/Release.key | sudo apt-key add -
+wget -qO - https://download.opensuse.org/repositories/Emulators:/Wine:/Debian/xUbuntu_18.04/Release.key | sudo apt-key add -
+
+Then run:
+sudo apt update && sudo apt upgrade -y
+
+Install winehq-staging:
+sudo apt install --install-recommends winehq-staging
+
+Then install the latest winetricks release from their github, following their instructions:
+https://github.com/Winetricks/winetricks
+
+Now setup a 32bit wine prefix:
+export WINEARCH=win32 WINEPREFIX=~/.wine32
+
+And run winetricks to install some necessary libraries:
+winetricks dotnet48 corefonts gdiplus
+
+Then you can use wine to install Tesira:
+wine tesira-software-v3-12.exe
+
+With the tesira software installed, you SHOULD be able to run it using wine!
