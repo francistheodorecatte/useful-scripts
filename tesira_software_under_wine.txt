@@ -13,9 +13,8 @@ sudo apt remove --purge wine*
 
 Add the following repositories:
 sudo add-apt-repository https://dl.winehq.org/wine-builds/ubuntu/
-sudo add-apt-repository https://download.opensuse.org/repositories/Emulators:/Wine:/Debian/xUbuntu_18.04/ ./
 wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
-wget -qO - https://download.opensuse.org/repositories/Emulators:/Wine:/Debian/xUbuntu_18.04/Release.key | sudo apt-key add -
+sudo add-apt-repository ppa:cybermax-dexter/sdl2-backport
 
 Then run:
 sudo apt update && sudo apt upgrade -y
