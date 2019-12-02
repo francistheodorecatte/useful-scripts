@@ -48,7 +48,7 @@ done
 
 # run badblocks to check the disk actually wrote all zeros
 # if it didn't, the disk is probably bad
-# then run a long online SMART test and list its results
+# then run a short online SMART test and list its results
 #!/bin/bash
 echo -e "Running disk checks.\nThis may take a very long time!" 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
@@ -134,7 +134,7 @@ fi
 
 # cryptsetup 2.x needed for LUKS2 support
 # change the branch to the latest stable version
-# v2.2.1 is the latest as of writing this
+# v2.2.2 is the latest as of writing this
 # LUKS2 gives us the ability to set the block size to 4096 instead of 512
 if command -v cryptsetup; then
 	dpkg --compare-versions "2" "ge" "$(cryptsetup --version | cut -d' ' -f2)"
@@ -143,7 +143,7 @@ if command -v cryptsetup; then
 	fi
 elif
 	echo "Downloading, compiling, and installing Cryptsetup 2." 2>&1 | tee $LOG
-	sudo -u $USER git clone -b v2.2.1 https://gitlab.com/cryptsetup/cryptsetup.git
+	sudo -u $USER git clone -b v2.2.2 https://gitlab.com/cryptsetup/cryptsetup.git
 	cd cryptsetup
 	./autogen.sh
 	./configure --prefix=/usr/local
@@ -210,4 +210,3 @@ echo  -e "All done!\nTo mount the crypt container just type the following in ter
 # this will allow per-share snapshots, and using the "previous history" feature in Windows.
 
 exit 0
-

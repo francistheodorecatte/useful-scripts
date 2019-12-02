@@ -3,6 +3,7 @@
 LOG="./raid_setup.log"
 CONTAINER="five-nines"
 MDARRAY="md0"
+RAIDLEVEL=5
 USER=$(logname)
 
 function convert_time(){
