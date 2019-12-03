@@ -55,7 +55,7 @@ for Dev in /sys/block/sd* ; do
 	echo -e "Checking /dev/${Dev##*/} for bad blocks..." 2>&1 | tee $LOG
         badblocks -sv -b 4096 -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG \
         && smartctl -t short -C /dev/${Dev##*/} 2>&1 | tee $LOG \
-	&& sleep 121 \ #wait two minutes for test results to show in disk's SMART log
+	&& sleep 121 \
         && smartctl -H /dev/${Dev##*/} 2>&1 | tee $LOG \
         && smartctl -l selftest /dev/${Dev##*/} 2>&1 | tee $LOG \
         && sleep 2
@@ -141,7 +141,7 @@ if command -v cryptsetup; then
 	if [ $? -eq "0" ]; then
 		echo "Cryptsetup 2+ already installed" 2>&1 | tee $LOG
 	fi
-elif
+else
 	echo "Downloading, compiling, and installing Cryptsetup 2." 2>&1 | tee $LOG
 	sudo -u $USER git clone -b v2.2.2 https://gitlab.com/cryptsetup/cryptsetup.git
 	cd cryptsetup
@@ -205,6 +205,15 @@ mount -o compression=zstd,autodefrag /dev/mapper/$CONTAINER /mnt/$CONTAINER	#not
 # note that using compression levels higher than 9 nets rapidly diminishing returns on compression vs. performance.
 
 echo  -e "All done!\nTo mount the crypt container just type the following in terminal as root:\ncryptsetup luksOpen /dev/$MDARRAY $CONTAINER\nmount -o compression=zstd,autodefrag /dev/mapper/$CONTAINER /mnt/$CONTAINER" 2>&1 | tee $LOG
+
+# NOTE ABOUT STRIPED RAID AND WRITE HOLES (RAID0/5/6)
+# An inherent flaw with all striped RAID technologies, is the "write hole".
+# Basically, a write hole is when the filesystem commands the disk to write data, but there's a power outage mid-write.
+# When the power outage occurs, a spinning disk will fail to complete the write. The filesystem doesn't know this when power is restored, however.
+# This affects MDADM as well. The easy way out is using a UPS, wherein on a power failure, you can perform a sync, dismount the filesystem, and shut down gracefully.
+# You can achieve this with a cheap UPS with a USB port on it for monitoring, and NUT (Network UPS Tools.)
+# If a UPS isn't available to you, PERFORM A RAID SCRUB AFTER ANY HARD RESET AND BEFORE YOU MOUNT THE FILE SYSTEM.
+# Otherwise, whatever was being written to the disk before the outage will be removed from the filesystem journal and therefore lost.
 
 # if using this filesystem for samba shares, it's recommended to use btrfs subvolumes for shared folders
 # this will allow per-share snapshots, and using the "previous history" feature in Windows.

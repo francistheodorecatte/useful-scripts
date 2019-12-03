@@ -54,7 +54,7 @@ if command -v cryptsetup; then
 	if [ $? -eq "0" ]; then
 		echo "Cryptsetup 2+ already installed" 2>&1 | tee $LOG
 	fi
-elif
+else
 	echo "Downloading, compiling, and installing Cryptsetup 2." 2>&1 | tee $LOG
 	sudo -u $USER git clone -b v2.2.2 https://gitlab.com/cryptsetup/cryptsetup.git
 	cd cryptsetup
@@ -66,3 +66,5 @@ elif
 	cd ..
 	rm -r ./cryptsetup
 fi
+
+exit 0
