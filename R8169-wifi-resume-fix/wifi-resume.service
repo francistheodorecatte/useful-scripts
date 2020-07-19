@@ -1,0 +1,14 @@
+[Unit]
+Description=Reload R8169 kernel module at resume
+After=suspend.target
+After=hibernate.target
+After=hybrid-sleep.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/r8169-restart
+
+[Install]
+WantedBy=suspend.target
+WantedBy=hibernate.target
+WantedBy=hybrid-sleep.target
