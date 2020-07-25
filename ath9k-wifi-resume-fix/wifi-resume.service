@@ -1,12 +1,12 @@
 [Unit]
-Description=Reload R8169 kernel module at resume
+Description=Reload ath9k kernel module at resume
 After=suspend.target
 After=hibernate.target
 After=hybrid-sleep.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/r8169-restart
+ExecStart=/usr/bin/ath9k-restart
 
 [Install]
 WantedBy=suspend.target

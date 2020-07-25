@@ -1,9 +1,0 @@
-workaround for the buggy Realtek R8169 kernel driver that fails to resume from sleep at times.
-
-copy wifi-resume.service to /etc/systemd/system and r8169-restart to /usr/bin
-
-then run:
-sudo systemctl deaemon-reload
-sudo systemctl enable wifi-resume.service
-
-fixed the problem on my Lenovo X131e.

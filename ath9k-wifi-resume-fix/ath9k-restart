@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# this script works around networking-related sleep issues
+# it mostly seems to boil down to driver/hardware problems
+# edit the kernel module to reflect which networking device you're using
+# also change the PCIe device address
+# works great on both the r8169 ethernet driver and ath9k wireless driver from my testing
+
+set -e
+
+echo "stopping network-manager.service"
+/bin/systemctl stop network-manager.service
+
+echo "unloading ath9k kernel module"
+/sbin/rmmod ath9k &
+wait $!
+
+echo "forceably resetting wireless module"
+echo 1 > "/sys/bus/pci/devices/0000:03:00.0/remove"
+# this PCIe address will change based on your device
+# you can find your PCIe address by running lspci -vv
+echo 1 > "/sys/bus/pci/rescan"
+
+echo "loading ath9k kernel module"
+/sbin/modprobe ath9k &
+wait $!
+
+sleep 5
+
+echo "starting network-manager.service"
+/bin/systemctl start network-manager.service
+
+exit 0

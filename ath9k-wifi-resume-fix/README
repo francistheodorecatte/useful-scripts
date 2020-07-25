@@ -1,0 +1,13 @@
+workaround for the buggy ath9k kernel driver that fails to resume from sleep at times. requires systemd.
+
+run lspci -vv to find out which PCIe address your wireless card is on, and edit line 19 of ath9k-restart to that address. the leading 0000: is the root PCIe bus, which is probably 0000 on your system. check /sys/bus/pci/devices if you're unsure.
+
+copy wifi-resume.service to /etc/systemd/system and ath9k-restart to /usr/bin
+
+then run:
+sudo systemctl deaemon-reload
+sudo systemctl enable wifi-resume.service
+
+it'll probably take 5-10seconds longer than on a cold boot, but the wireless should come up fine. at least in testing on my Lenovo X131e, it does.
+
+happy hacking!

@@ -1,9 +1,0 @@
-#!/bin/bash
-
-set -e
-
-/sbin/rmmod r8169
-/sbin/modprobe r8169
-/bin/systemctl restart network-manager.service
-
-exit 0
