@@ -22,7 +22,9 @@ set -e
 # make
 # make install
 
-mkdir /dev/shm/hls/
+if [ ! -d "/dev/shm/hls" ]; then
+        mkdir /dev/shm/hls
+fi
 
 media-ctl --set-v4l2 '"ov5640 1-003c":0[fmt:UYVY8_2X8/1920x1080@1/15]' \
 && cd /dev/shm/hls/ \
