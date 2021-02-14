@@ -23,11 +23,11 @@ set -e
 # make install
 
 if [ ! -d "/dev/shm/hls" ]; then
-        mkdir /dev/shm/hls
-		cp ./index.html /dev/shm/hls
-		cd /dev/shm/hls/
-		wget https://github.com/video-dev/hls.js/releases/download/v0.14.17/release.zip
-		unzip release.zip
+	mkdir /dev/shm/hls
+	cp ./index.html /dev/shm/hls
+	cd /dev/shm/hls/
+	wget https://github.com/video-dev/hls.js/releases/download/v0.14.17/release.zip
+	unzip release.zip
 fi
 
 cd /dev/shm/hls/
