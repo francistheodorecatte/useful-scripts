@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# A script to perform incremental backups using rsync over SSH
+# SSH is only really a good idea if you've got a shitty network connection to your remote server
+# Unlike protocols like CIFS/SMB or NFS, SSH opens a single connection to transmit data over.
+# In my case, I'm connected over Wi-Fi, which slows down dramatically the more connections are open.
+# Requires your user to have SSH keys setup, both locally, and remotely, for this to work automatically.
+
+[ $# -eq 0 ] && { echo -e -n "Usage:\nincremental-backup {ssh-user} {remote-host} {dir-to-backup} {backup-dir}"; exit 1; }
+
+# Some sanity stuff
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Read in arguments
+readonly SSH_USER="$1"
+readonly SSH_HOST="$2"
+readonly SSH="${SSH_USER}@${SSH_HOST}"
+readonly SOURCE_DIR="$3"
+readonly REMOTE_DIR="$4"
+readonly REMOTE_BACKUP_STR="${SSH}:${REMOTE_DIR}"
+readonly DATETIME="$(date '+%Y-%m-%d_%H-%M-%S')"
+readonly BACKUP_PATH="${REMOTE_BACKUP_STR}/${DATETIME}"
+LATEST=$(ssh ${SSH} "readlink ${REMOTE_DIR}/latest" 2>&1) #annoying workaround (rsync's --link-dest breaks on softlinks!!)
+readonly LATEST=$(basename ${LATEST})
+
+ssh ${SSH} "mkdir ${REMOTE_DIR}/${DATETIME}" #just in case, probably unnecessary.
+
+# SSH compression is disabled because it just causes extra overhead for little gain.
+# rsync's --link-dest compares against the last backup, and only uploads new files, linking to the old files in the last backup.
+rsync -avzh -e "ssh -x -T -o Compression=no" --delete \
+  "${SOURCE_DIR}/" \
+  --link-dest="../${LATEST}" \
+  --exclude=.cache --exclude=cache \ #it may behoove you to add more --excludes for folders you don't want backed up (trashes, for instance)
+  "${BACKUP_PATH}"
+
+# Remove old latest softlink, and create new one
+ssh ${SSH} "rm ${REMOTE_DIR}/latest && ln -s ${REMOTE_DIR}/${DATETIME} ${REMOTE_DIR}/latest"
+
+exit 0

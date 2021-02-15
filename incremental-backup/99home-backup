@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# cron script to invoke the backup script
+# change {user}, {remote IP}, etc. to fit your needs
+
+test -x /usr/bin/incremental-backup || exit 0
+
+if [[ $(ps -ef | grep '[r]rsync -avzh -e "ssh -x -T -o Compression=no" --delete /home/joseph/') ]]; then
+	exit 1
+fi
+
+if [ "$(id -u)" -eq 0 ]; then
+    exec sudo -H -u user $0 "$@"
+fi
+
+# script {username} {remote IP} {directory to backup} {remote backup directory"
+incremental-backup user 192.168.0.50 /home/user "/mnt/@backup/desktop/incremental"

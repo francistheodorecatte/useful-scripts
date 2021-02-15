@@ -1,0 +1,3 @@
+edit 99home-backup to fit your needs, then copy incremental-backup to /usr/bin
+
+invokes rsync-over-ssh for backups on spotty connections. it's a lot faster than other backup techniques, from my limited testing.
