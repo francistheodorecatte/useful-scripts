@@ -32,7 +32,9 @@ fi
 
 cd /dev/shm/hls/
 
-media-ctl --set-v4l2 '"ov5640 1-003c":0[fmt:YUV420/1920x1080@1/15]' \
+# the cedar hardware video accelerator only supports NV12 and NV16 color spaces, those being YUV4:2:0 and YUV4:2:2, respectively.
+# if NV12 does not work with your sensor, change the fmt:YUV420 string and format=NV12 to their NV16 counterparts.
+media-ctl --set-v4l2 '"ov5640 1-003c":0[fmt:YUVY/1920x1080@1/15]' \
 && gst-launch-1.0 --gst-debug-level=3 --gst-plugin-path=/usr/local/lib/gstreamer-1.0 -ve v4l2src device=/dev/video0 \
 ! video/x-raw,width=1920,height=1080,format=NV12,framerate=15/1 \
 ! cedar_h264enc ! mpegtsmux ! hlssink target-duration=1 playlist-length=2 max-files=3 &
