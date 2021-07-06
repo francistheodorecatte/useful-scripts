@@ -1,0 +1,1 @@
+some scripts for setting up a Buffalo LinkStation 421DE running Debian Buster
