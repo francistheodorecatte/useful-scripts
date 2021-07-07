@@ -6,6 +6,7 @@
 # Use with caution.
 
 LOG='$(dirname "$0")/raid_setup.log' 
+RAIDLEVEL="1"
 CONTAINER="SS13" 
 USER=$(logname)
 spin='-\|/'
@@ -156,21 +157,20 @@ fi
 # ~HERE BE DRAGONS!~ 
 
 # this cipher is needed to take advantage of the marvell CESA module 
-echo -e "Creating crypt container(s).\nEnter passkey when prompted…" 2>&1 | tee $LOG 
-cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 --sector-size 512 --type luks2 luksFormat /dev/sda 2>&1 | tee $LOG
-cryptsetup luksOpen /dev/sda sda-crypt 2>&1 | tee $LOG
-cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 --sector-size 512 --type luks2 luksFormat /dev/sdb 2>&1 | tee $LOG
-cryptsetup luksOpen /dev/sdb sdb-crypt 2>&1 | tee $LOG
+echo -e "Creating crypt container(s).\nEnter passkey when prompted…" 2>&1 | tee $LOG
+for Dev in /sys/block/sd* ; do
+	cryptsetup -v -y -c aes-cbc-essiv:sha256 -s 256 --sector-size 512 --type luks2 luksFormat /dev/${Dev##*/} 2>&1 | tee $LOG
+	cryptsetup luksOpen /dev/${Dev##*/} ${Dev##*/}-crypt 2>&1 | tee $LOG
+done
 
 # create and add keyfile
 # may be worth investigating storing the keyfile in NAND flash or similar.
 dd if=/dev/urandom of=/root/keyfile bs=4096
 chmod 0400 /root/keyfile
-cryptsetup luksAddKey /dev/sda /root/keyfile 2>&1 | tee $LOG
-cryptsetup luksAddKey /dev/sda /root/keyfile 2>&1 | tee $LOG
-
-echo "sda-crypt PARTUUID=$(lsblk /dev/sda -o partuuid -n) $CONTAINER /root/keyfile luks2" > /etc/crypttab
-echo "sdb-crypt PARTUUID=$(lsblk /dev/sdb -o partuuid -n) $CONTAINER /root/keyfile luks2" >> /etc/crypttab
+for Dev in /sys/block/sd* ; do
+	cryptsetup luksAddKey /dev/${Dev##*/} /root/keyfile 2>&1 | tee $LOG
+	echo "${Dev##*/}-crypt PARTUUID=$(lsblk /dev/${Dev##*/} -o partuuid -n) $CONTAINER /root/keyfile luks2" >> /etc/crypttab
+done
 
 echo -e "Wipe the crypt containers to make the empty space on the disk cryptographically random\nThis will take a while..." 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do 
@@ -188,22 +188,26 @@ echo -e"Done!\n" 2>&1 | tee $LOG
 # the swap is just to supplement the RAM on the LS421DE without destroying any flash devices with repeated writes 
 # if you've got the disks and the means, why not use it? 
 echo "Setting up LVM2 on both disks and creating swap." 2>&1 | tee $LOG
-pvcreate /dev/mapper/sda-crypt 2>&1 | tee $LOG
-vgcreate disk1 /dev/mapper/sda-crypt 2>&1 | tee $LOG
-lvcreate -L 512M -n swap disk1 2>&1 | tee $LOG
-lvcreate -L 100%VG -n root disk1 2>&1 | tee $LOG
-pvcreate /dev/mapper/sdb-crypt 2>&1 | tee $LOG
-vgcreate disk2 /dev/mapper/sdb-crypt 2>&1 | tee $LOG
-lvcreate -L 512M -n swap disk2 2>&1 | tee $LOG
-lvcreate -L 100%VG -n root disk2 2>&1 | tee $LOG
+i=1; for Dev in /sys/block/sd* ; do
+	pvcreate /dev/mapper/sda-crypt 2>&1 | tee $LOG
+	vgcreate disk${i} /dev/mapper/${Dev##*/}-crypt 2>&1 | tee $LOG
+	lvcreate -L 512M -n swap disk${i} 2>&1 | tee $LOG
+	lvcreate -L 100%VG -n root disk${i} 2>&1 | tee $LOG
+	i=${i}+1
+done
 
 echo "Setting up the btrfs RAID1." 2>&1 | tee $LOG
 mkfs.btrfs /dev/disk1/root 2>&1 | tee $LOG
 mkdir /mnt/$CONTAINER 2>&1 | tee $LOG 
 mount -o compression=zstd,autodefrag /dev/disk1/root /mnt/$CONTAINER 2>&1 | tee $LOG #note that ZSTD compression required kernel 4.14 or newer
-btrfs device add /dev/disk2/root /mnt/$CONTAINER 2>&1 | tee $LOG
+i=1; for Dev in /sys/block/sd* ; do
+	if [[ $i -ne 1 ]]; then
+		btrfs device add /dev/disk${i}/root /mnt/$CONTAINER 2>&1 | tee $LOG
+	fi
+	i=${i}+1
+done
 btrfs filesystem label /mnt/$CONTAINER $CONTAINER 2>&1 | tee $LOG
-btrfs fileystem balance start -dconvert=raid1 -mconvert=raid2 /mnt/$CONTAINER 2>&1 | tee $LOG 
+btrfs fileystem balance start -dconvert=raid${RAIDLEVEL} -mconvert=raid${i} /mnt/$CONTAINER 2>&1 | tee $LOG 
 
 # as for the compression, zstd isn't the only compression routine, you can also use zlib and lzo.
 # also, in kernel 5.1 and newer, you can set compression levels via mounting options.
@@ -212,10 +216,11 @@ btrfs fileystem balance start -dconvert=raid1 -mconvert=raid2 /mnt/$CONTAINER 2>
 # note that using compression levels higher than 9 nets rapidly diminishing returns on compression vs. performance.
 
 echo "Adding RAID volume and disk swap to fstab." 2>&1 | tee $LOG
-echo "
+cat <<'EOF' > /etc/fstab
 UUID=$(lsblk /dev/disk1/root -o uuid -n)	/mnt/$CONTAINER	btrfs defaults,compression=zstd:9,autodefrag	0	0
 UUID=$(lsblk /dev/disk1/swap -o uuid -n)	none	swap sw	0	0
-" >> /etc/fstab
+EOF
+
 update-initramfs -u 2>&1 | tee $LOG
  
 echo -e "All done!\nConsider setting up Bees (https://github.com/Zygo/bees) to take advantage of btrfs deduplication, before copying any data to the array.\nI'd also recommend rebooting and checking the disks are decrypted and mounted automatically on boot.\nAnd finally, you can check on the array by running btrfs filesystem usage /mnt/$CONTAINER\nHappy Hacking!" 2>&1 | tee $LOG
