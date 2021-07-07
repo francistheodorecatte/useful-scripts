@@ -36,10 +36,25 @@ if ! [ dpkg-query -s e2fsprogs mdadm pv smartmontools btrfs-tools hdparm >/dev/n
 	hdparm
 fi 
 
+# wipe disks
+for Dev in /sys/block/sd* ; do
+	echo -e "Preparing to wipe /dev/${Dev##*/} with zeroes..." 2>&1 | tee $LOG
+	dd if=/dev/zero of=/dev/${Dev##*/} bs=512 conv=sync,noerror &
+done
+
+spin='-\|/'
+echo -e "Waiting for disk wipes to complete.\n This may take a long time!" 2>&1 | tee $LOG
+while [ -n "$(ps -aux | grep '[d]d if=/dev/zero')" ]; do
+	i=$(( (i+1) %4 ))
+	printf "\r${spin:$i:1}"
+	sleep .1
+done
+echo -e"Done!\n" 2>&1 | tee $LOG
+
 # run badblocks 
 for Dev in /sys/block/sd* ; do 
 	echo -e "Checking /dev/${Dev##*/} for bad blocks..." 2>&1 | tee $LOG 
-	badblocks -wsv -p 1 -b 512 -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG &
+	badblocks -sv -p 1 -b 512 -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG &
 done
 
 spin='-\|/'
@@ -49,9 +64,10 @@ while [ -n "$(ps -aux | grep '[b]adblocks')" ]; do
 	printf "\r${spin:$i:1}"
 	sleep .1
 done
+echo -e "Done!\n" 2>&1 | tee $LOG
 
 # then run a short online SMART test and list its results 
-echo -e "Scans complete!\nNow running SMART tests." 2>&1 | tee $LOG
+echo "Now running SMART tests." 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do
 	smartctl -t short -C /dev/${Dev##*/} 2>&1 | tee $LOG \ 
 	&& sleep 121 \ 
@@ -60,7 +76,7 @@ for Dev in /sys/block/sd* ; do
 	&& sleep 2
 done 
 
-echo -e "Disk checks finished\n Before continuing, read over the log located at $LOG for the badblocks and smartctl reports." 
+echo -e "\nDisk checks finished\n Before continuing, read over the log located at $LOG for the badblocks and smartctl reports." 
 echo -e "Additionally, each disk will have a badblocks_{FOO}.txt in the script directory.\bIf they're empty, badblocks reported no bad sectors and can be ignored.\nIf they're NOT empty, trash that drive! That means the disk has run out of sector reallocation space and can no longer mask bad sectors itself.\nThis should be noted by a high reallocated sector count in the smartctl report for this drive." 
 read -p "Press CTRL+C to quit, or any other key to continue." -n1 -s 
 
