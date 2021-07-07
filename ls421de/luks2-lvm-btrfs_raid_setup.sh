@@ -37,12 +37,23 @@ if ! [ dpkg-query -s e2fsprogs mdadm pv smartmontools btrfs-tools hdparm >/dev/n
 fi 
 
 # run badblocks 
-# then run a short online SMART test and list its results 
-echo -e "Wiping disks, and running disk checks.\nThis may take a very long time!" 2>&1 | tee $LOG 
 for Dev in /sys/block/sd* ; do 
-echo -e "Checking /dev/${Dev##*/} for bad blocks..." 2>&1 | tee $LOG 
-badblocks -wsv -p 1 -b 512 -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG \ 
-	&& smartctl -t short -C /dev/${Dev##*/} 2>&1 | tee $LOG \ 
+	echo -e "Checking /dev/${Dev##*/} for bad blocks..." 2>&1 | tee $LOG 
+	badblocks -wsv -p 1 -b 512 -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG &
+done
+
+spin='-\|/'
+echo -e "Waiting for badblocks scans to complete.\n This may take a long time!" 2>&1 | tee $LOG
+while [ -n "$(ps -aux | grep '[b]adblocks')" ]; do
+	i=$(( (i+1) %4 ))
+	printf "\r${spin:$i:1}"
+	sleep .1
+done
+
+# then run a short online SMART test and list its results 
+echo -e "Scans complete!\nNow running SMART tests." 2>&1 | tee $LOG
+for Dev in /sys/block/sd* ; do
+	smartctl -t short -C /dev/${Dev##*/} 2>&1 | tee $LOG \ 
 	&& sleep 121 \ 
 	&& smartctl -H /dev/${Dev##*/} 2>&1 | tee $LOG \ 
 	&& smartctl -l selftest /dev/${Dev##*/} 2>&1 | tee $LOG \ 
