@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# Debian Buster on LS421DE btrfs RAID1 + LUKS2 setup script 
-# Based off of my older Helios4 script 
-# Use with caution. 
+# Debian Buster on LS421DE btrfs RAID1 + LUKS2 setup script by Francis Theodore Catte, 2021.
+# Based off of my older Helios4 script.
+# I recommend plugging the NAS into a battery backup for the duration of this script, since it may take literally an entire week.
+# Use with caution.
 
 LOG='$(dirname "$0")/raid_setup.log' 
 CONTAINER="SS13" 
-USER=$(logname) 
+USER=$(logname)
+spin='-\|/'
 
 # create log file as non-root user to avoid root permissions 
 # this technique will be used later for running git clones 
@@ -42,7 +44,6 @@ for Dev in /sys/block/sd* ; do
 	dd if=/dev/zero of=/dev/${Dev##*/} bs=512 conv=sync,noerror &
 done
 
-spin='-\|/'
 echo -e "Waiting for disk wipes to complete.\n This may take a long time!" 2>&1 | tee $LOG
 while [ -n "$(ps -aux | grep '[d]d if=/dev/zero')" ]; do
 	i=$(( (i+1) %4 ))
@@ -57,7 +58,6 @@ for Dev in /sys/block/sd* ; do
 	badblocks -sv -p 1 -b 512 -t 0x00 -o ./badblocks_${Dev##*/}.txt /dev/${Dev##*/} 2>&1 | tee $LOG &
 done
 
-spin='-\|/'
 echo -e "Waiting for badblocks scans to complete.\n This may take a long time!" 2>&1 | tee $LOG
 while [ -n "$(ps -aux | grep '[b]adblocks')" ]; do
 	i=$(( (i+1) %4 ))
@@ -107,7 +107,7 @@ if ! [ dpkg-query -s build-essential uuid-dev libdevmapper-dev libpopt-dev pkg-c
 	fakeroot \ 
 	devscripts \ 
 	debhelper \ 
-	linux-headers-next-mvebu \ 
+	linux-headers-next-mvebu \ #need to check what the actual linux headers package is in this case, since 'linux-headers-next-mvebu' is for Armbian.
 	git
 fi 
 
@@ -174,8 +174,16 @@ echo "sdb-crypt PARTUUID=$(lsblk /dev/sdb -o partuuid -n) $CONTAINER /root/keyfi
 
 echo -e "Wipe the crypt containers to make the empty space on the disk cryptographically random\nThis will take a while..." 2>&1 | tee $LOG
 for Dev in /sys/block/sd* ; do 
-	dd if=/dev/urandom of=/dev/mapper/${Dev##*/}-crypt status=progress conv=sync,notrunc,noerror 2>&1 | tee $LOG 
-done 
+	dd if=/dev/urandom of=/dev/mapper/${Dev##*/}-crypt status=progress conv=sync,notrunc,noerror 2>&1 | tee $LOG &
+done
+
+echo -e "Waiting for crypt container wipes to complete.\n This may take a long time!" 2>&1 | tee $LOG
+while [ -n "$(ps -aux | grep '[d]d if=/dev/urandom')" ]; do
+	i=$(( (i+1) %4 ))
+	printf "\r${spin:$i:1}"
+	sleep .1
+done
+echo -e"Done!\n" 2>&1 | tee $LOG
 
 # the swap is just to supplement the RAM on the LS421DE without destroying any flash devices with repeated writes 
 # if you've got the disks and the means, why not use it? 
